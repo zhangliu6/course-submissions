@@ -1,0 +1,219 @@
+(* term-project_about-computing-the-width-of-a-binary-tree.ml *)
+(* Introduction to Computer Science (YSC1212), Sem2, 2019-2020 *)
+(* Olivier Danvy <danvy@yale-nus.edu.sg> *)
+(* Version of Sat 04 Apr 2020 *)
+
+(* ********** *)
+
+(*
+   name:
+   student ID number:
+   e-mail address:
+*)
+
+(*
+   name:
+   student ID number:
+   e-mail address:
+*)
+
+(*
+   name:
+   student ID number:
+   e-mail address:
+*)
+
+(*
+   name:
+   student ID number:
+   e-mail address:
+*)
+
+(* ********** *)
+
+let show_int n =
+  if n < 0
+  then "(" ^ string_of_int n ^ ")"
+  else string_of_int n;;
+
+let show_array show_yourself a =
+  let length_of_a = Array.length a
+  in let rec loop i =
+       if i = length_of_a
+       then "|]"
+       else "; " ^ show_yourself (Array.get a i) ^ loop (succ i)
+     in if length_of_a = 0
+        then "[||]"
+        else "[|" ^ show_yourself (Array.get a 0) ^ loop 1;;
+
+(* ********** *)
+
+exception Not_implemented_yet of string;;
+
+(* ********** *)
+
+type 'a binary_tree =
+  | Leaf of 'a
+  | Node of 'a binary_tree * 'a binary_tree;;
+
+let show_binary_tree show_yourself t =
+  (* show_binary_tree : ('a -> string) -> 'a binary_tree -> string *)
+  let rec visit t =
+    match t with
+    | Leaf v ->
+       "Leaf " ^ (show_yourself v)
+    | Node (t1, t2) ->
+       "Node (" ^ visit t1 ^ ", " ^ visit t2 ^ ")"
+  in visit t;;
+
+let fold_binary_tree leaf_case node_case t_init =
+ (* fold_binary_tree : ('a -> 'b) -> ('b -> 'b -> 'b) -> 'a binary_tree -> 'b *)
+  let rec visit t =
+    match t with
+    | Leaf v ->
+       leaf_case v
+    | Node (t1, t2) ->
+       node_case (visit t1) (visit t2)
+  in visit t_init;;
+
+let generate_random_binary_tree_int d_given =
+  let rec generate d =
+    if d = 0
+    then Leaf (Random.int 100)
+    else match Random.int 3 with
+         | 0 ->
+            Leaf (- (Random.int 100))
+         | _ ->
+            let d' = pred d
+            in Node (generate d', generate d')
+  in generate d_given;;
+
+let depth t_given =
+  let rec visit t =
+    match t with
+    | Leaf _ ->
+       0
+    | Node (t1, t2) ->
+       succ (max (visit t1) (visit t2))
+  in visit t_given;;
+
+(* ********** *)
+
+let width_v0 t_given =
+ (* width_v0 : 'a binary_tree -> int *)
+  let n = succ (depth t_given)
+  in let a = Array.make n 0
+     in let rec visit t d =
+          Array.set a d (succ (Array.get a d));
+          match t with
+          | Leaf _ ->
+             ()
+          | Node (t1, t2) ->
+             let d' = succ d
+             in visit t1 d';
+                visit t2 d'
+        in visit t_given 0;
+           let rec array_max i m =
+             if i = n
+             then m
+             else array_max (succ i) (max m (Array.get a i))
+           in array_max 1 (Array.get a 0);;
+
+(* ********** *)
+
+let test_width_int_one name candidate test expected_result given_tree =
+  let actual_result = candidate given_tree
+  in if actual_result = expected_result
+     then true
+     else let () = Printf.printf
+                     "test_width_int failed for %s in %s with result %s instead of %s\n"
+                     name
+                     test
+                     (show_binary_tree show_int given_tree)
+                     (show_int expected_result)
+          in false;;
+
+let test_width_int name candidate_width =
+ (* test_width_int : string -> (int binary_tree -> int) -> bool *)
+  let b0 = test_width_int_one name candidate_width "b0" 1 (Leaf 1)
+  and b1 = test_width_int_one name candidate_width "b1" 2 (Node (Leaf 1,
+                                                                 Leaf 2))
+  and b2 = test_width_int_one name candidate_width "b2" 2 (Node (Leaf 1,
+                                                                 Node (Leaf 1,
+                                                                       Leaf 2)))
+  and b3 = test_width_int_one name candidate_width "b3" 2 (Node (Node (Leaf 1,
+                                                                       Leaf 2),
+                                                                 Leaf 2))
+  and b4 = test_width_int_one name candidate_width "b4" 4 (Node (Node (Leaf 1,
+                                                                       Leaf 2),
+                                                                 Node (Leaf 3,
+                                                                       Leaf 4)))
+  and b5 = test_width_int_one name candidate_width "b5" 6 (Node (Node (Node (Leaf 1,
+                                                                             Leaf 2),
+                                                                       Leaf 2),
+                                                                 Node (Node (Leaf 3,
+                                                                             Leaf 4),
+                                                                       Node (Leaf 5,
+                                                                             Leaf 6))))
+  and b6 = test_width_int_one name candidate_width "b6" 6 (Node (Node (Node (Node (Leaf 1,
+                                                                                   Leaf 2),
+                                                                             Leaf 2),
+                                                                       Leaf 2),
+                                                                 Node (Node (Leaf 3,
+                                                                             Node (Leaf 3,
+                                                                                   Leaf 4)),
+                                                                       Node (Leaf 5,
+                                                                             Leaf 6))))
+  and b7 = (let t = generate_random_binary_tree_int 10
+            in test_width_int_one
+                 name
+                 candidate_width
+                 "b7"
+                 (width_v0 t)
+                 t)
+  (* etc. *)
+  in b0 && b1 && b2 && b3 && b4 && b5 && b6 && b7;;
+
+(* ********** *)
+
+(*using previous questions' functions to shorten our setup*)
+#use "term-project_about-queues.ml";;
+
+
+let width_v1 t =
+ (* width_v1 : 'a binary_tree -> int *)
+  raise (Not_implemented_yet "width_v1");;
+
+(* ********** *)
+
+let width_v2 t =
+ (* width_v2 : 'a binary_tree -> int *)
+  let leaf_case x = fun x  -> 1 in
+
+  let node_case x1 x2 =
+    let rec sum_queue x1 x2 =
+      match x1 with
+      | [] -> x2
+      | v1 :: vs1 ->
+         match x2 with
+         | [] -> x1
+         | v2 :: vs2 -> v1+v2 :: (sum_queue vs1 vs2)
+    in 1 :: (sum_queue x1 x2) 
+  in fold_binary_tree leaf_case node_case t;;
+
+
+(* ********** *)
+
+let () = assert (test_width_int "width_v0" width_v0);;
+
+(*
+let () = assert (test_width_int "width_v1" width_v1);;
+ *)
+
+(*
+let () = assert (test_width_int "width_v2" width_v2);;
+ *)
+
+(* ********** *)
+
+(* end of term-project_about-computing-the-width-of-a-binary-tree.ml *)

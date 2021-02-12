@@ -1,0 +1,132 @@
+(* term-project_about-the-knapsack-problem.ml *)
+(* Introduction to Computer Science (YSC1212), Sem2, 2019-2020 *)
+(* Olivier Danvy <danvy@yale-nus.edu.sg> *)
+(* Version of Sat 04 Apr 2020 *)
+
+(* ********** *)
+
+(* name: 
+   email address: 
+   student number: 
+
+   other members of the group:
+   name: 
+   name: 
+   name: 
+*)
+
+(* ********** *)
+
+let powerset given_vs =
+  let rec outer_visit vs =
+    match vs with
+    | [] ->
+       [[]]
+    | v :: vs' ->
+       let outer_ih = outer_visit vs'
+       in let rec inner_visit wss =
+            match wss with
+            | [] ->
+               outer_ih
+            | ws :: wss' ->
+               let inner_ih = inner_visit wss'
+               in (v :: ws) :: inner_ih
+          in inner_visit outer_ih
+  in outer_visit given_vs;;
+
+let assess_subset given_triples =
+  let rec loop triples total_weight total_monetary_value =
+    match triples with
+    | [] ->
+       (total_weight, total_monetary_value, given_triples)
+    | (name, weight, monetary_value) :: triples' ->
+       loop triples' (total_weight + weight) (total_monetary_value + monetary_value)
+  in loop given_triples 0 0;;
+
+let assess_powerset given_tripless =
+  List.map assess_subset given_tripless;;
+
+let filter_out p given_vs =
+  let rec visit vs =
+    match vs with
+    | [] ->
+       []
+    | v :: vs' ->
+       if p v
+       then visit vs'
+       else v :: visit vs'
+  in visit given_vs;;
+
+let minimize_the_weight given_weight assessed_subsets =
+  filter_out
+    (fun (weight, monetary_value, triples) ->
+      weight > given_weight)
+    assessed_subsets;;
+
+type comparison = Lt | Eq | Gt;;
+
+let compare v1 v2 =
+  if v1 < v2 then Lt else if v1 = v2 then Eq else Gt;;
+
+let maximize_the_monetary_value given_candidate_subsets =
+  let rec visit candidate_subsets =
+    match candidate_subsets with
+    | [] ->
+       (0, [])
+    | candidate_subset :: candidate_subsets' ->
+       let (weight, monetary_value, triples) = candidate_subset
+       and (current_monetary_value, current_candidate_subsets) = visit candidate_subsets'
+       in match compare monetary_value current_monetary_value with
+          | Lt ->
+             (current_monetary_value, current_candidate_subsets)
+          | Eq ->
+             (current_monetary_value, candidate_subset :: current_candidate_subsets)
+          | Gt ->
+             (monetary_value, candidate_subset :: [])
+  in visit given_candidate_subsets;;
+
+let minimax_v0 given_weight given_triples =
+  maximize_the_monetary_value
+    (minimize_the_weight
+       given_weight
+       (List.map
+          assess_subset
+          (powerset given_triples)));;
+
+(*
+   # minimax_v0 2 [("diamond", 10, 100); ("ruby1", 7, 70); ("ruby2", 7, 70); ("jade", 3, 30)];;
+   - : int * (int * int * (string * int * int) list) list = (0, [(0, 0, [])])
+   # minimax_v0 5 [("diamond", 10, 100); ("ruby1", 7, 70); ("ruby2", 7, 70); ("jade", 3, 30)];;
+   - : int * (int * int * (string * int * int) list) list = (30, [(3, 30, [("jade", 3, 30)])])
+   # minimax_v0 8 [("diamond", 10, 100); ("ruby1", 7, 70); ("ruby2", 7, 70); ("jade", 3, 30)];;
+   - : int * (int * int * (string * int * int) list) list = (70, [(7, 70, [("ruby1", 7, 70)]); (7, 70, [("ruby2", 7, 70)])])
+   # minimax_v0 10 [("diamond", 10, 100); ("ruby1", 7, 70); ("ruby2", 7, 70); ("jade", 3, 30)];;
+   - : int * (int * int * (string * int * int) list) list = (100, [(10, 100, [("diamond", 10, 100)]); (10, 100, [("ruby1", 7, 70); ("jade", 3, 30)]); (10, 100, [("ruby2", 7, 70); ("jade", 3, 30)])])
+   # 
+*)
+
+(* ********** *)
+
+let minimize_assessed_powerset_v0 given_weight given_triples =
+  minimize_the_weight
+    given_weight
+    (List.map
+       assess_subset
+       (powerset given_triples));;
+
+let minimax_v0_alt given_weight given_triples =
+  maximize_the_monetary_value
+    (minimize_assessed_powerset_v0 given_weight given_triples);;
+
+(* ********** *)
+
+let minimize_assessed_powerset_v1 given_weight given_triples =
+  assert false;;
+
+let minimax_v1 given_weight given_triples =
+  maximize_the_monetary_value
+    (minimize_assessed_powerset_v1 given_weight given_triples);;
+
+(* ********** *)
+
+(* end of term-project_about-the-knapsack-problem.ml *)
